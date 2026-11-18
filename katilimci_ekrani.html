@@ -134,6 +134,89 @@
       border-radius: 6px;
     }
 
+    /* Ortak Modal / Katman Stili (Kamera & Uyarı & Final) */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.94);
+      color: #f8fafc;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 22px;
+      text-align: center;
+      z-index: 999;
+      gap: 14px;
+    }
+    .modal-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 16px;
+      padding: 20px;
+      width: 100%;
+      max-width: 360px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+    }
+    .modal-card h2 {
+      font-size: 18px;
+      color: #38bdf8;
+    }
+    .modal-card p {
+      font-size: 13.5px;
+      line-height: 1.55;
+      color: #cbd5e1;
+    }
+    .modal-btn {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 10px;
+      font-weight: 800;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .btn-primary {
+      background: #0284c7;
+      color: #ffffff;
+    }
+    .btn-warn {
+      background: #7c3aed;
+      color: #ffffff;
+    }
+    .btn-close {
+      background: #334155;
+      color: #e2e8f0;
+    }
+
+    /* Kamera Önizleme Kutusu */
+    #camPreview {
+      width: 100%;
+      max-height: 230px;
+      border-radius: 12px;
+      background: #0f172a;
+      object-fit: cover;
+      display: none;
+      border: 2px solid #22c55e;
+      transform: scaleX(-1);
+    }
+
+    /* Ekran Titreme Efekti (Titreşim desteklemeyen cihazlar için görsel destek) */
+    @keyframes shakeScreen {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-8px); }
+      40% { transform: translateX(8px); }
+      60% { transform: translateX(-6px); }
+      80% { transform: translateX(6px); }
+    }
+    .shaking {
+      animation: shakeScreen 0.45s ease-in-out 2;
+    }
+
     /* Sürpriz Final Ekranı */
     .reveal-overlay {
       position: fixed;
@@ -146,7 +229,7 @@
       justify-content: center;
       padding: 24px;
       text-align: center;
-      z-index: 999;
+      z-index: 1000;
     }
     .reveal-overlay h2 {
       color: #f87171;
@@ -201,7 +284,27 @@
     </div>
   </div>
 
-  <!-- Eğitmen Tetikleyince Açılan Farkındalık Ekranı -->
+  <!-- 1. Kamera İzni Senaryosu Katmanı -->
+  <div class="modal-overlay" id="cameraModal">
+    <div class="modal-card">
+      <h2 id="camTitle">📷 Kamera Erişim Testi</h2>
+      <p id="camDesc">Eğitmen cihazınıza kamera izin isteği gönderdi. Tarayıcı onay penceresini görmek için aşağıdaki butona dokunun.</p>
+      <video id="camPreview" autoplay playsinline muted></video>
+      <button id="camStartBtn" class="modal-btn btn-primary" onclick="kamerayiBaslat()">Kamerayı Test Et</button>
+      <button class="modal-btn btn-close" onclick="kamerayiKapat()">Kapat ve Ankete Dön</button>
+    </div>
+  </div>
+
+  <!-- 2. Titreşim, Ses ve Uyarı Bildirimi Katmanı -->
+  <div class="modal-overlay" id="alertModal">
+    <div class="modal-card" id="alertCard">
+      <h2 id="alertTitle" style="color:#c084fc;">⚠️ Cihaz Uyarısı</h2>
+      <p id="alertDesc"></p>
+      <button class="modal-btn btn-warn" onclick="uyariyiOnayla()">Anladım, Devam Et</button>
+    </div>
+  </div>
+
+  <!-- 3. Eğitmen Tetikleyince Açılan Farkındalık Ekranı -->
   <div class="reveal-overlay" id="revealOverlay">
     <h2>⚠️ DİJİTAL AYAK İZİNİZ PROJEKSİYONA YANSIDI!</h2>
     <p id="revealText"></p>
@@ -215,6 +318,44 @@
     const joinBox = document.getElementById('joinBox');
     const feedArea = document.getElementById('feedArea');
     let baglanti = null;
+    let aktifKameraAkisi = null;
+    let audioCtx = null;
+
+    // İlk dokunuşta tarayıcı ses motorunu kilitten çıkar (mobil tarayıcı politikası için)
+    function sesMotorunuHazirla() {
+      if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) audioCtx = new AudioContext();
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume().catch(() => {});
+      }
+    }
+
+    // Harici ses dosyası gerektirmeyen uyarı sesi üretici (Web Audio API)
+    function uyariSesiCal() {
+      try {
+        sesMotorunuHazirla();
+        if (!audioCtx) return;
+
+        const simdi = audioCtx.currentTime;
+        [0, 0.22].forEach((gecikme, idx) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(idx === 0 ? 780 : 980, simdi + gecikme);
+
+          gain.gain.setValueAtTime(0.001, simdi + gecikme);
+          gain.gain.exponentialRampToValueAtTime(0.25, simdi + gecikme + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.001, simdi + gecikme + 0.18);
+
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(simdi + gecikme);
+          osc.stop(simdi + gecikme + 0.19);
+        });
+      } catch (e) {}
+    }
 
     const peer = new Peer();
 
@@ -229,6 +370,7 @@
     });
 
     function manuelBaglan() {
+      sesMotorunuHazirla();
       const kod = document.getElementById('codeInput').value.trim();
       if (kod.length === 4) {
         odavaBaglan(kod);
@@ -251,7 +393,43 @@
       });
 
       conn.on('data', (veri) => {
-        if (veri.tip === 'SURPRIZ_FINAL') {
+        // 1. Komut: Kamera İzni Senaryosu (index.html -> tip: 'KAMERA_AC')
+        if (veri.tip === 'KAMERA_AC') {
+          uyariSesiCal();
+          if (navigator.vibrate) navigator.vibrate(150);
+
+          document.getElementById('camTitle').textContent = `📷 ${veri.baslik || 'Kamera Erişim Testi'}`;
+          document.getElementById('camDesc').textContent = veri.mesaj || 'Kamera izni penceresi test ediliyor.';
+          document.getElementById('camPreview').style.display = 'none';
+          document.getElementById('camStartBtn').style.display = 'block';
+          document.getElementById('cameraModal').style.display = 'flex';
+        }
+
+        // 2. Komut: Titreşim, Ses ve Geri Bildirim Uyarısı (index.html -> tip: 'TITRESIM_VE_GERI_BILDIRIM')
+        else if (veri.tip === 'TITRESIM_VE_GERI_BILDIRIM') {
+          // Mobil cihazlarda titreşim motorunu tetikle
+          if (navigator.vibrate) {
+            navigator.vibrate(veri.desen || [300, 150, 300]);
+          }
+          // Sesli uyarı çal
+          uyariSesiCal();
+
+          // Görsel uyarı modalını aç ve sallama animasyonu uygula
+          document.getElementById('alertTitle').textContent = veri.baslik || '⚠️ Dikkat!';
+          document.getElementById('alertDesc').textContent = veri.mesaj || 'Cihazınız uzaktan tetiklendi.';
+          const modal = document.getElementById('alertModal');
+          const card = document.getElementById('alertCard');
+          modal.style.display = 'flex';
+          card.classList.remove('shaking');
+          void card.offsetWidth; // Animasyonu sıfırla
+          card.classList.add('shaking');
+        }
+
+        // 3. Komut: Sürpriz Final (index.html -> tip: 'SURPRIZ_FINAL')
+        else if (veri.tip === 'SURPRIZ_FINAL') {
+          uyariSesiCal();
+          if (navigator.vibrate) navigator.vibrate([200, 100, 400]);
+
           document.getElementById('revealText').innerHTML = `
             Az önce sıradan bir ankete katıldığınızı düşünürken; telefonunuzun modeli, pil seviyesi ve ekrana dokunduğunuz <strong>${veri.dokunus} noktanın tamamı</strong> anlık olarak sahnedeki ekrana aktarıldı!<br><br>
             İnternetteki uygulama ve siteler de her dokunuşunuzu işte böyle izler.
@@ -259,6 +437,70 @@
           document.getElementById('revealOverlay').style.display = 'flex';
         }
       });
+    }
+
+    // Kamera izni isteme ve sonucu eğitmen ekranına raporlama
+    function kamerayiBaslat() {
+      sesMotorunuHazirla();
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        document.getElementById('camDesc').textContent = "Bu tarayıcı veya bağlantı (HTTP) kamera erişimini desteklemiyor.";
+        if (baglanti && baglanti.open) {
+          baglanti.send({ tip: 'KAMERA_DURUM', izinVerildi: false, durum: 'Desteklenmiyor (HTTPS Gerekli)' });
+        }
+        return;
+      }
+
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false })
+        .then((stream) => {
+          aktifKameraAkisi = stream;
+          const videoEl = document.getElementById('camPreview');
+          videoEl.srcObject = stream;
+          videoEl.style.display = 'block';
+          document.getElementById('camStartBtn').style.display = 'none';
+          document.getElementById('camDesc').innerHTML =
+            "<strong>İzin Verildi!</strong> Tarayıcı onay penceresini kabul ettiğiniz için ön kameranız şu an aktif. Görüntü yalnızca kendi cihazınızda gösterilmektedir.";
+
+          if (baglanti && baglanti.open) {
+            baglanti.send({
+              tip: 'KAMERA_DURUM',
+              izinVerildi: true,
+              durum: 'İzin Verildi (Aktif)'
+            });
+          }
+        })
+        .catch(() => {
+          document.getElementById('camDesc').innerHTML =
+            "<strong>İzin Reddedildi:</strong> Tarayıcı iznini engellediğiniz için kamera açılamadı. Bilinmeyen sitelerde en güvenli davranış budur.";
+
+          if (baglanti && baglanti.open) {
+            baglanti.send({
+              tip: 'KAMERA_DURUM',
+              izinVerildi: false,
+              durum: 'İzin Reddedildi'
+            });
+          }
+        });
+    }
+
+    function kamerayiKapat() {
+      if (aktifKameraAkisi) {
+        aktifKameraAkisi.getTracks().forEach(track => track.stop());
+        aktifKameraAkisi = null;
+      }
+      document.getElementById('camPreview').srcObject = null;
+      document.getElementById('cameraModal').style.display = 'none';
+    }
+
+    // Uyarı penceresi onaylandığında eğitmene geri bildirim gönder
+    function uyariyiOnayla() {
+      sesMotorunuHazirla();
+      document.getElementById('alertModal').style.display = 'none';
+      if (baglanti && baglanti.open) {
+        baglanti.send({
+          tip: 'GERI_BILDIRIM',
+          mesaj: 'Katılımcı sesli ve titreşimli uyarıyı görüp onayladı.'
+        });
+      }
     }
 
     function cihazBilgisiGonder() {
@@ -292,7 +534,12 @@
 
     // Ekrana yapılan her dokunuşu koordinat oranıyla canlı gönder
     document.addEventListener('click', (e) => {
+      sesMotorunuHazirla();
       if (!baglanti || !baglanti.open) return;
+
+      // Modal içindeki buton tıklamalarını anket dokunuşu olarak sayma
+      if (e.target.closest('.modal-overlay') || e.target.closest('.reveal-overlay')) return;
+
       const xOran = e.clientX / window.innerWidth;
       const yOran = e.clientY / window.innerHeight;
       const kart = e.target.closest('.topic-card');
