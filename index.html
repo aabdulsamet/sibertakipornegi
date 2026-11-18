@@ -240,6 +240,58 @@
       z-index: 15;
     }
 
+    /* Eğitmen Ekranında Katılımcı Canlı Kamera Kutusu */
+    .remote-cam-box {
+      margin-top: 4px;
+      background: #0f172a;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .remote-cam-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: #e2e8f0;
+    }
+    .cam-badge {
+      padding: 2px 7px;
+      border-radius: 99px;
+      font-size: 10px;
+      background: #334155;
+      color: #cbd5e1;
+    }
+    .cam-badge.live {
+      background: #16a34a;
+      color: #ffffff;
+    }
+    #remoteCamVideo {
+      width: 100%;
+      height: 150px;
+      border-radius: 8px;
+      background: #020617;
+      object-fit: cover;
+      transform: scaleX(-1);
+      display: none;
+    }
+    .cam-placeholder {
+      height: 150px;
+      border-radius: 8px;
+      background: #020617;
+      color: #64748b;
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 10px;
+    }
+
     /* Sağ: Katılımcı Cihaz Röntgeni & Canlı Akış */
     .data-row {
       display: flex;
@@ -265,8 +317,8 @@
       padding: 8px;
       border-radius: 8px;
       flex: 1;
-      min-height: 140px;
-      max-height: 220px;
+      min-height: 120px;
+      max-height: 190px;
       overflow-y: auto;
       line-height: 1.45;
     }
@@ -320,7 +372,7 @@
       </div>
     </div>
 
-    <!-- Sağ Sütun: Sızan Cihaz Bilgileri & Akış -->
+    <!-- Sağ Sütun: Sızan Cihaz Bilgileri, Canlı Kamera & Akış -->
     <div class="card">
       <div class="card-title">3. CİHAZDAN GELEN VERİLER</div>
       <div class="data-row"><span class="data-lbl">Cihaz / Sistem:</span><span id="pOS" class="data-val">Bekleniyor...</span></div>
@@ -330,7 +382,19 @@
       <div class="data-row"><span class="data-lbl">Kamera Durumu:</span><span id="pCam" class="data-val">İstenmedi</span></div>
       <div class="data-row"><span class="data-lbl">Baskın İlgi:</span><span id="pTopic" class="data-val" style="color:#dc2626;">Henüz Yok</span></div>
 
-      <div style="font-size:11.5px; font-weight:700; color:#475569; margin-top:4px;">Canlı Telemetri Günlüğü:</div>
+      <!-- Katılımcı Kamera Yayını -->
+      <div class="remote-cam-box">
+        <div class="remote-cam-header">
+          <span>KATILIMCI KAMERA YAYINI</span>
+          <span id="camLiveBadge" class="cam-badge">KAPALI</span>
+        </div>
+        <video id="remoteCamVideo" autoplay playsinline muted></video>
+        <div id="camPlaceholder" class="cam-placeholder">
+          Katılımcı kameraya izin verdiğinde canlı yayın burada görünür.
+        </div>
+      </div>
+
+      <div style="font-size:11.5px; font-weight:700; color:#475569; margin-top:2px;">Canlı Telemetri Günlüğü:</div>
       <div id="teleLog" class="live-log">
         [SİSTEM] P2P WebRTC sunucusuna bağlanılıyor...
       </div>
@@ -344,8 +408,12 @@
     const mirrorCanvas = document.getElementById('mirrorCanvas');
     const ctx = mirrorCanvas.getContext('2d');
     const tapCounterEl = document.getElementById('tapCounter');
+    const remoteCamVideo = document.getElementById('remoteCamVideo');
+    const camPlaceholder = document.getElementById('camPlaceholder');
+    const camLiveBadge = document.getElementById('camLiveBadge');
 
     let aktifBaglanti = null;
+    let aktifCagri = null;
     let dokunusSayisi = 0;
     const konuSayaci = {};
 
@@ -361,6 +429,19 @@
       teleLog.appendChild(d);
       if (teleLog.children.length > 40) teleLog.removeChild(teleLog.firstChild);
       teleLog.scrollTop = teleLog.scrollHeight;
+    }
+
+    function kameraYayininiSifirla(mesaj = "Kamera yayını kapandı.") {
+      if (aktifCagri) {
+        try { aktifCagri.close(); } catch (e) {}
+        aktifCagri = null;
+      }
+      remoteCamVideo.srcObject = null;
+      remoteCamVideo.style.display = 'none';
+      camPlaceholder.style.display = 'flex';
+      camPlaceholder.textContent = mesaj;
+      camLiveBadge.textContent = "KAPALI";
+      camLiveBadge.classList.remove('live');
     }
 
     // Katılımcı sayfasının URL'sini otomatik oluştur ve QR koda bas
@@ -407,6 +488,30 @@
       logEkle(`Oda hazır! Kod: ${odaKodu}. Katılımcı bekleniyor...`);
     });
 
+    // Katılımcıdan gelen canlı kamera/medya çağrısını (peer.call) kabul et
+    peer.on('call', (call) => {
+      aktifCagri = call;
+      call.answer(); // Eğitmenin kamera göndermesine gerek yok, yalnızca gelen görüntüyü alır
+
+      call.on('stream', (remoteStream) => {
+        remoteCamVideo.srcObject = remoteStream;
+        remoteCamVideo.style.display = 'block';
+        camPlaceholder.style.display = 'none';
+        camLiveBadge.textContent = "CANLI";
+        camLiveBadge.classList.add('live');
+        logEkle("CANLI KAMERA YAYINI BAŞLADI: Katılımcı görüntüsü ekrana yansıtılıyor.");
+      });
+
+      call.on('close', () => {
+        kameraYayininiSifirla("Katılımcı kamera yayınını sonlandırdı.");
+        logEkle("Katılımcı kamera bağlantısı kapandı.");
+      });
+
+      call.on('error', () => {
+        kameraYayininiSifirla("Kamera akışı sırasında bağlantı hatası oluştu.");
+      });
+    });
+
     peer.on('connection', (conn) => {
       aktifBaglanti = conn;
       connStatus.textContent = "● KATILIMCI BAĞLANDI (CANLI)";
@@ -432,12 +537,13 @@
           }
           logEkle(`DOKUNUŞ -> Konum: (%${Math.round(veri.xOran*100)}, %${Math.round(veri.yOran*100)}) | Alan: ${veri.konu || 'Boşluk'}`);
         } else if (veri.tip === 'KAMERA_DURUM') {
-          // Katılımcı kameraya izin verdiğinde veya reddettiğinde geri bildirim alır
           document.getElementById('pCam').textContent = veri.durum;
           document.getElementById('pCam').style.color = veri.izinVerildi ? '#15803d' : '#dc2626';
           logEkle(`KAMERA YANITI: ${veri.durum}`);
+          if (!veri.izinVerildi) {
+            kameraYayininiSifirla("Katılımcı kamera iznini kapattı veya reddetti.");
+          }
         } else if (veri.tip === 'GERI_BILDIRIM') {
-          // Katılımcı titreşim/uyarı mesajını onayladığında log düşer
           logEkle(`KATILIMCI ONAYI: ${veri.mesaj}`);
         }
       });
@@ -445,6 +551,7 @@
       conn.on('close', () => {
         connStatus.textContent = "● BAĞLANTI KESİLDİ";
         connStatus.classList.remove('connected');
+        kameraYayininiSifirla("Katılımcı bağlantıyı kapattı.");
         logEkle("Katılımcı bağlantıyı kapattı.");
       });
     });
