@@ -318,7 +318,9 @@
     const joinBox = document.getElementById('joinBox');
     const feedArea = document.getElementById('feedArea');
     let baglanti = null;
+    let hedefEgitmenPeerId = null;
     let aktifKameraAkisi = null;
+    let aktifMedyaCagrisi = null;
     let audioCtx = null;
 
     // İlk dokunuşta tarayıcı ses motorunu kilitten çıkar (mobil tarayıcı politikası için)
@@ -379,7 +381,8 @@
 
     function odavaBaglan(odaKodu) {
       connBadge.textContent = "Bağlanıyor...";
-      const conn = peer.connect("agulseven-oda-" + odaKodu);
+      hedefEgitmenPeerId = "agulseven-oda-" + odaKodu;
+      const conn = peer.connect(hedefEgitmenPeerId);
 
       conn.on('open', () => {
         baglanti = conn;
@@ -407,21 +410,18 @@
 
         // 2. Komut: Titreşim, Ses ve Geri Bildirim Uyarısı (index.html -> tip: 'TITRESIM_VE_GERI_BILDIRIM')
         else if (veri.tip === 'TITRESIM_VE_GERI_BILDIRIM') {
-          // Mobil cihazlarda titreşim motorunu tetikle
           if (navigator.vibrate) {
             navigator.vibrate(veri.desen || [300, 150, 300]);
           }
-          // Sesli uyarı çal
           uyariSesiCal();
 
-          // Görsel uyarı modalını aç ve sallama animasyonu uygula
           document.getElementById('alertTitle').textContent = veri.baslik || '⚠️ Dikkat!';
           document.getElementById('alertDesc').textContent = veri.mesaj || 'Cihazınız uzaktan tetiklendi.';
           const modal = document.getElementById('alertModal');
           const card = document.getElementById('alertCard');
           modal.style.display = 'flex';
           card.classList.remove('shaking');
-          void card.offsetWidth; // Animasyonu sıfırla
+          void card.offsetWidth;
           card.classList.add('shaking');
         }
 
@@ -439,7 +439,7 @@
       });
     }
 
-    // Kamera izni isteme ve sonucu eğitmen ekranına raporlama
+    // Kamera izni isteme, kendi ekranında gösterme ve eğitmen ekranına medya çağrısı ile aktarma
     function kamerayiBaslat() {
       sesMotorunuHazirla();
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -458,13 +458,21 @@
           videoEl.style.display = 'block';
           document.getElementById('camStartBtn').style.display = 'none';
           document.getElementById('camDesc').innerHTML =
-            "<strong>İzin Verildi!</strong> Tarayıcı onay penceresini kabul ettiğiniz için ön kameranız şu an aktif. Görüntü yalnızca kendi cihazınızda gösterilmektedir.";
+            "<strong>İzin Verildi!</strong> Ön kameranız aktif ve canlı görüntü sahnedeki eğitmen ekranına da aktarılıyor.";
+
+          // Eğitmen ekranına canlı video akışı (stream) gönder
+          if (hedefEgitmenPeerId && peer && !peer.destroyed) {
+            if (aktifMedyaCagrisi) {
+              try { aktifMedyaCagrisi.close(); } catch (e) {}
+            }
+            aktifMedyaCagrisi = peer.call(hedefEgitmenPeerId, stream);
+          }
 
           if (baglanti && baglanti.open) {
             baglanti.send({
               tip: 'KAMERA_DURUM',
               izinVerildi: true,
-              durum: 'İzin Verildi (Aktif)'
+              durum: 'İzin Verildi (Canlı Aktarılıyor)'
             });
           }
         })
@@ -483,15 +491,26 @@
     }
 
     function kamerayiKapat() {
+      if (aktifMedyaCagrisi) {
+        try { aktifMedyaCagrisi.close(); } catch (e) {}
+        aktifMedyaCagrisi = null;
+      }
       if (aktifKameraAkisi) {
         aktifKameraAkisi.getTracks().forEach(track => track.stop());
         aktifKameraAkisi = null;
       }
       document.getElementById('camPreview').srcObject = null;
       document.getElementById('cameraModal').style.display = 'none';
+
+      if (baglanti && baglanti.open) {
+        baglanti.send({
+          tip: 'KAMERA_DURUM',
+          izinVerildi: false,
+          durum: 'Katılımcı Kapatıldı'
+        });
+      }
     }
 
-    // Uyarı penceresi onaylandığında eğitmene geri bildirim gönder
     function uyariyiOnayla() {
       sesMotorunuHazirla();
       document.getElementById('alertModal').style.display = 'none';
@@ -537,7 +556,6 @@
       sesMotorunuHazirla();
       if (!baglanti || !baglanti.open) return;
 
-      // Modal içindeki buton tıklamalarını anket dokunuşu olarak sayma
       if (e.target.closest('.modal-overlay') || e.target.closest('.reveal-overlay')) return;
 
       const xOran = e.clientX / window.innerWidth;
