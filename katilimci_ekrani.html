@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Dijital Alışkanlıklar Mini Anketi</title>
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background-color: #f8fafc;
+      color: #0f172a;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      padding: 16px;
+      user-select: none;
+    }
+
+    .top-bar {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    }
+    .app-name {
+      font-weight: 800;
+      font-size: 14px;
+      color: #0284c7;
+    }
+    .conn-dot {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 99px;
+      background: #fef3c7;
+      color: #b45309;
+    }
+    .conn-dot.ok {
+      background: #dcfce7;
+      color: #15803d;
+    }
+
+    /* Oda Kodu Giriş Ekranı (QR kullanılmazsa) */
+    .join-box {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 14px;
+      padding: 20px;
+      text-align: center;
+      margin: auto 0;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    }
+    .join-box input {
+      width: 100%;
+      padding: 12px;
+      font-size: 22px;
+      text-align: center;
+      letter-spacing: 6px;
+      font-weight: 800;
+      border: 2px solid #cbd5e1;
+      border-radius: 8px;
+      margin: 12px 0;
+    }
+    .join-btn {
+      width: 100%;
+      padding: 12px;
+      background: #0284c7;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-weight: 800;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    /* Masum Görünümlü Etkileşim Kartları */
+    .feed {
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+      flex: 1;
+    }
+    .prompt-text {
+      font-size: 13px;
+      color: #475569;
+      background: #e0f2fe;
+      padding: 10px 12px;
+      border-radius: 8px;
+      line-height: 1.4;
+    }
+    .topic-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      cursor: pointer;
+      transition: transform 0.1s, border-color 0.2s;
+    }
+    .topic-card:active {
+      transform: scale(0.98);
+      border-color: #0284c7;
+    }
+    .topic-title {
+      font-weight: 800;
+      font-size: 15px;
+      color: #0f172a;
+    }
+    .topic-sub {
+      font-size: 12.5px;
+      color: #64748b;
+    }
+    .like-tag {
+      align-self: flex-start;
+      background: #f1f5f9;
+      color: #334155;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 5px 10px;
+      border-radius: 6px;
+    }
+
+    /* Sürpriz Final Ekranı */
+    .reveal-overlay {
+      position: fixed;
+      inset: 0;
+      background: #0f172a;
+      color: #f8fafc;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      text-align: center;
+      z-index: 999;
+    }
+    .reveal-overlay h2 {
+      color: #f87171;
+      font-size: 20px;
+      margin-bottom: 12px;
+    }
+    .reveal-overlay p {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #cbd5e1;
+      margin-bottom: 18px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="top-bar">
+    <div class="app-name">Sosyal Medya İlgi Testi</div>
+    <div id="connBadge" class="conn-dot">Bağlanıyor...</div>
+  </div>
+
+  <!-- Oda Kodu Girişi -->
+  <div class="join-box" id="joinBox">
+    <div style="font-weight:800; font-size:16px;">Oturuma Katıl</div>
+    <div style="font-size:12.5px; color:#64748b; margin-top:4px;">Projeksiyon ekranındaki 4 haneli oda kodunu girin:</div>
+    <input type="tel" id="codeInput" maxlength="4" placeholder="0000">
+    <button class="join-btn" onclick="manuelBaglan()">KATIL</button>
+  </div>
+
+  <!-- Katılımcının Gördüğü Masum Akış -->
+  <div class="feed" id="feedArea">
+    <div class="prompt-text">
+      Aşağıdaki konulardan ilginizi çekenlere dokunun ve beğenin. Tercihlerinize göre içerik akışı oluşturulacaktır:
+    </div>
+
+    <div class="topic-card" data-konu="Teknoloji & Oyun">
+      <div class="topic-title">📱 Yapay Zeka ve Yeni Nesil Telefonlar</div>
+      <div class="topic-sub">En yeni mobil uygulamalar, oyun teknolojileri ve dijital trendler.</div>
+      <div class="like-tag">👍 İlgimi Çekiyor</div>
+    </div>
+
+    <div class="topic-card" data-konu="Seyahat & Tatil">
+      <div class="topic-title">✈️ Hafta Sonu Rotaları ve Doğa Gezileri</div>
+      <div class="topic-sub">Keşfedilmemiş sakin tatil beldeleri ve kamp önerileri.</div>
+      <div class="like-tag">👍 İlgimi Çekiyor</div>
+    </div>
+
+    <div class="topic-card" data-konu="Spor & Sağlık">
+      <div class="topic-title">🏃‍♂️ Sağlıklı Yaşam ve Günlük Egzersiz</div>
+      <div class="topic-sub">Enerjik kalmak için pratik beslenme ve spor ipuçları.</div>
+      <div class="like-tag">👍 İlgimi Çekiyor</div>
+    </div>
+  </div>
+
+  <!-- Eğitmen Tetikleyince Açılan Farkındalık Ekranı -->
+  <div class="reveal-overlay" id="revealOverlay">
+    <h2>⚠️ DİJİTAL AYAK İZİNİZ PROJEKSİYONA YANSIDI!</h2>
+    <p id="revealText"></p>
+    <div style="font-size:12px; color:#38bdf8; border:1px solid #38bdf8; padding:10px; border-radius:8px;">
+      Abdulsamet GÜLSEVEN — Güvenli İnternet Farkındalık Eğitimi
+    </div>
+  </div>
+
+  <script>
+    const connBadge = document.getElementById('connBadge');
+    const joinBox = document.getElementById('joinBox');
+    const feedArea = document.getElementById('feedArea');
+    let baglanti = null;
+
+    const peer = new Peer();
+
+    peer.on('open', () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlOda = params.get('oda');
+      if (urlOda) {
+        odavaBaglan(urlOda);
+      } else {
+        connBadge.textContent = "Kod Bekleniyor";
+      }
+    });
+
+    function manuelBaglan() {
+      const kod = document.getElementById('codeInput').value.trim();
+      if (kod.length === 4) {
+        odavaBaglan(kod);
+      }
+    }
+
+    function odavaBaglan(odaKodu) {
+      connBadge.textContent = "Bağlanıyor...";
+      const conn = peer.connect("agulseven-oda-" + odaKodu);
+
+      conn.on('open', () => {
+        baglanti = conn;
+        connBadge.textContent = "● Oturum Aktif";
+        connBadge.classList.add('ok');
+        joinBox.style.display = 'none';
+        feedArea.style.display = 'flex';
+
+        // Cihaz bilgilerini sessizce eğitmen ekranına gönder
+        cihazBilgisiGonder();
+      });
+
+      conn.on('data', (veri) => {
+        if (veri.tip === 'SURPRIZ_FINAL') {
+          document.getElementById('revealText').innerHTML = `
+            Az önce sıradan bir ankete katıldığınızı düşünürken; telefonunuzun modeli, pil seviyesi ve ekrana dokunduğunuz <strong>${veri.dokunus} noktanın tamamı</strong> anlık olarak sahnedeki ekrana aktarıldı!<br><br>
+            İnternetteki uygulama ve siteler de her dokunuşunuzu işte böyle izler.
+          `;
+          document.getElementById('revealOverlay').style.display = 'flex';
+        }
+      });
+    }
+
+    function cihazBilgisiGonder() {
+      if (!baglanti) return;
+      const ua = navigator.userAgent;
+      let os = "Mobil Cihaz";
+      if (ua.includes("Android")) os = "Android Telefon";
+      else if (ua.includes("iPhone")) os = "Apple iPhone";
+      else if (ua.includes("Windows")) os = "Windows PC";
+
+      const ekran = `${screen.width}x${screen.height} px`;
+      const connInfo = navigator.connection;
+      const ag = connInfo ? `${(connInfo.effectiveType || '4G').toUpperCase()}` : "Wi-Fi / Mobil Veri";
+
+      if (navigator.getBattery) {
+        navigator.getBattery().then(b => {
+          baglanti.send({
+            tip: 'CIHAZ_BILGISI',
+            os: os,
+            ekran: ekran,
+            pil: `%${Math.round(b.level * 100)}`,
+            ag: ag
+          });
+        }).catch(() => {
+          baglanti.send({ tip: 'CIHAZ_BILGISI', os, ekran, pil: "Korumalı", ag });
+        });
+      } else {
+        baglanti.send({ tip: 'CIHAZ_BILGISI', os, ekran, pil: "iOS Korumalı", ag });
+      }
+    }
+
+    // Ekrana yapılan her dokunuşu koordinat oranıyla canlı gönder
+    document.addEventListener('click', (e) => {
+      if (!baglanti || !baglanti.open) return;
+      const xOran = e.clientX / window.innerWidth;
+      const yOran = e.clientY / window.innerHeight;
+      const kart = e.target.closest('.topic-card');
+      const konu = kart ? kart.getAttribute('data-konu') : null;
+
+      if (kart) {
+        const tag = kart.querySelector('.like-tag');
+        if (tag) {
+          tag.textContent = "✔ Beğenildi";
+          tag.style.background = "#dcfce7";
+          tag.style.color = "#15803d";
+        }
+      }
+
+      baglanti.send({
+        tip: 'DOKUNUS',
+        xOran: xOran,
+        yOran: yOran,
+        konu: konu
+      });
+    });
+  </script>
+
+</body>
+</html>
