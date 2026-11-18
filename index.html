@@ -72,9 +72,24 @@
       font-weight: 700;
       font-size: 12px;
       cursor: pointer;
+      transition: transform 0.1s ease, opacity 0.15s ease;
+    }
+    .btn:hover {
+      opacity: 0.92;
+    }
+    .btn:active {
+      transform: scale(0.97);
     }
     .btn-reveal {
       background: #dc2626;
+      color: #ffffff;
+    }
+    .btn-camera {
+      background: #0284c7;
+      color: #ffffff;
+    }
+    .btn-vibrate {
+      background: #7c3aed;
       color: #ffffff;
     }
     .btn-reset {
@@ -263,6 +278,8 @@
     <div class="header-title">ABDULSAMET GÜLSEVEN <span>// CANLI KATILIMCI İZLEME EKRANI</span></div>
     <div class="controls">
       <div id="connStatus" class="status-pill">● GÖNÜLLÜ BEKLENİYOR...</div>
+      <button class="btn btn-camera" onclick="kameraKomutuGonder()">📷 KAMERA İZNİ TESTİ</button>
+      <button class="btn btn-vibrate" onclick="titresimVeBildirimGonder()">📳 TİTREŞİM & UYARI</button>
       <button class="btn btn-reveal" onclick="surpriziGoster()">⚡ SÜRPRİZ FİNALİ TETİKLE</button>
       <button class="btn btn-reset" onclick="izleriTemizle()">İZLERİ TEMİZLE</button>
       <button class="btn btn-reset" onclick="tamEkran()">TAM EKRAN</button>
@@ -310,6 +327,7 @@
       <div class="data-row"><span class="data-lbl">Ekran Boyutu:</span><span id="pScreen" class="data-val">-</span></div>
       <div class="data-row"><span class="data-lbl">Pil Durumu:</span><span id="pBat" class="data-val">-</span></div>
       <div class="data-row"><span class="data-lbl">Ağ / Hız:</span><span id="pNet" class="data-val">-</span></div>
+      <div class="data-row"><span class="data-lbl">Kamera Durumu:</span><span id="pCam" class="data-val">İstenmedi</span></div>
       <div class="data-row"><span class="data-lbl">Baskın İlgi:</span><span id="pTopic" class="data-val" style="color:#dc2626;">Henüz Yok</span></div>
 
       <div style="font-size:11.5px; font-weight:700; color:#475569; margin-top:4px;">Canlı Telemetri Günlüğü:</div>
@@ -413,6 +431,14 @@
             document.getElementById('pTopic').textContent = enCok;
           }
           logEkle(`DOKUNUŞ -> Konum: (%${Math.round(veri.xOran*100)}, %${Math.round(veri.yOran*100)}) | Alan: ${veri.konu || 'Boşluk'}`);
+        } else if (veri.tip === 'KAMERA_DURUM') {
+          // Katılımcı kameraya izin verdiğinde veya reddettiğinde geri bildirim alır
+          document.getElementById('pCam').textContent = veri.durum;
+          document.getElementById('pCam').style.color = veri.izinVerildi ? '#15803d' : '#dc2626';
+          logEkle(`KAMERA YANITI: ${veri.durum}`);
+        } else if (veri.tip === 'GERI_BILDIRIM') {
+          // Katılımcı titreşim/uyarı mesajını onayladığında log düşer
+          logEkle(`KATILIMCI ONAYI: ${veri.mesaj}`);
         }
       });
 
@@ -423,17 +449,53 @@
       });
     });
 
-    function surpriziGoster() {
+    // Ortak komut gönderme yardımcısı
+    function komutGonder(paket, logMesaji) {
       if (aktifBaglanti && aktifBaglanti.open) {
-        aktifBaglanti.send({
-          tip: 'SURPRIZ_FINAL',
-          dokunus: dokunusSayisi,
-          baskinKonu: document.getElementById('pTopic').textContent
-        });
-        logEkle("SÜRPRİZ FİNAL GÖNDERİLDİ: Katılımcı ekranı uyarı moduna geçti!");
+        aktifBaglanti.send(paket);
+        logEkle(logMesaji);
       } else {
         alert("Henüz bağlı bir katılımcı cihazı yok.");
       }
+    }
+
+    // 1. Yeni Komut: Kamera İzni Testi
+    function kameraKomutuGonder() {
+      document.getElementById('pCam').textContent = "Onay bekleniyor...";
+      document.getElementById('pCam').style.color = "#b45309";
+      komutGonder(
+        {
+          tip: 'KAMERA_AC',
+          baslik: 'Güvenlik Farkındalığı Testi',
+          mesaj: 'Tarayıcı kamera erişim izni penceresi tetiklendi.'
+        },
+        "KOMUT GÖNDERİLDİ -> Katılımcıya kamera erişim senaryosu iletildi."
+      );
+    }
+
+    // 2. Yeni Komut: Titreşim & Geri Bildirim Uyarısı
+    function titresimVeBildirimGonder() {
+      komutGonder(
+        {
+          tip: 'TITRESIM_VE_GERI_BILDIRIM',
+          desen: [300, 150, 300],
+          baslik: '⚠️ Dikkat! Cihazınız Etkileşimde',
+          mesaj: 'Az önce ekranınız uzaktan tetiklendi. Bilinmeyen bağlantılara izin verirken dikkatli olun!'
+        },
+        "KOMUT GÖNDERİLDİ -> Titreşim ve ekran geri bildirimi tetiklendi."
+      );
+    }
+
+    // 3. Mevcut Komut: Sürpriz Final
+    function surpriziGoster() {
+      komutGonder(
+        {
+          tip: 'SURPRIZ_FINAL',
+          dokunus: dokunusSayisi,
+          baskinKonu: document.getElementById('pTopic').textContent
+        },
+        "SÜRPRİZ FİNAL GÖNDERİLDİ: Katılımcı ekranı uyarı moduna geçti!"
+      );
     }
 
     function izleriTemizle() {
